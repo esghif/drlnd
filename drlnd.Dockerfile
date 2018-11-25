@@ -6,7 +6,6 @@ ENV http_proxy=http://172.17.0.1:3128
 ENV https_proxy=http://172.17.0.1:3128
 ENV HTTP_PROXY=http://172.17.0.1:3128
 ENV HTTPS_PROXY=http://172.17.0.1:3128
-ENV NO_PROXY=*.bosch.com,127.0.0.1
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
