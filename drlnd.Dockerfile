@@ -6,6 +6,7 @@ ENV http_proxy=http://172.17.0.1:3128
 ENV https_proxy=http://172.17.0.1:3128
 ENV HTTP_PROXY=http://172.17.0.1:3128
 ENV HTTPS_PROXY=http://172.17.0.1:3128
+ENV NO_PROXY=*.bosch.com,127.0.0.1
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
@@ -53,8 +54,9 @@ RUN conda install -y requests && conda clean -ya
 RUN pip install --upgrade pip
 
 # Install python requirements
-COPY drlnd.requirements /tmp/
-RUN pip install -r /tmp/drlnd.requirements
+RUN git clone https://github.com/udacity/deep-reinforcement-learning.git && \
+    cd deep-reinforcement-learning/python && \
+    pip install .
 
 # Install OpenAI Gym
 RUN pip install cython
