@@ -68,9 +68,12 @@ class Agent():
             self.memory.add(state, action, reward, next_state, done)
 
         # Learn, if enough samples are available in memory
-        if eps < 50:
+        if eps < 10:
             self.mod = 1
             self.repeat = 20
+        elif eps < 20:
+            self.mod = 1
+            self.repeat = 10
         elif eps < 100:
             self.mod = 1
             self.repeat = 2
