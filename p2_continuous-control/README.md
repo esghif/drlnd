@@ -2,6 +2,22 @@
 
 ### Environment Details
 
+In this environment, a double-jointed arm can move to target locations. A reward of +0.1 is provided for each step that the agent's hand is in the goal location. Thus, the goal of your agent is to maintain its position at the target location for as many time steps as possible.
+
+The observation space consists of 33 variables corresponding to position, rotation, velocity, and angular velocities of the arm. Each action is a vector with four numbers, corresponding to torque applicable to two joints. Every entry in the action vector should be a number between -1 and 1.
+
+The goal of the Reacher environment is to collect yellow bananas and 
+avoid blue bananas. A reward of +1 is given for collecting a yellow banana
+and a penalty of -1 is received for collecting a blue banana. 
+The environment is solved if an average reward of +13 is received over the
+last 100 episodes.
+
+The action space is discrete. There are 4 possible actions:
+0 - move forward, 1 - move backward, 2 - turn left, 3 - turn right.
+
+The state is 37 dimensional corresponding to the velocity of the agent
+and ray-based perception of objects around the agent's forward direction.
+
 The goal of the Navigation environment is to collect yellow bananas and 
 avoid blue bananas. A reward of +1 is given for collecting a yellow banana
 and a penalty of -1 is received for collecting a blue banana. 
