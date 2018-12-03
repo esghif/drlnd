@@ -110,15 +110,7 @@ of learning steps taken as the policy improves as shown below.
 ### Ideas for Future Development
 
 The DDPG algorithm seems to be very well suited to learn a policy that solves 
-the Reacher environment. It was found, though, that learning is sensitive to 
-the random initialization seed.
+the Reacher environment, even though it is sensitive to the random initialization seed.
+I don't really have an improvement idea, but testing other algorithms and comparing them to DDPG
+seems a worthwhile experiment.
 
-
-
-Prioritized experience replay has not really worked for me so the first thing I would continue to 
-investigate whether there is not still a programming error. 
-
-
-I attempted to solve the learning-from-pixels problem. I ran into the problem, though, that 
-there seems to be a memory leak in the simulator and learning gets really difficult with time.
-Of course, there may be a problem in my code, also.
