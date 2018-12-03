@@ -2,33 +2,19 @@
 
 ### Environment Details
 
-In this environment, a double-jointed arm can move to target locations. A reward of +0.1 is provided for each step that the agent's hand is in the goal location. Thus, the goal of your agent is to maintain its position at the target location for as many time steps as possible.
+The goal of the Reacher environment is to move and keep a double-jointed arm
+in a target location. The environment provides a reward of +0.1 for each time step 
+that the arm is in the target position.
+I've chose to work on the parallel environment that conatins 20 arms 
+operating in paralllel.
+The environment is considered solved when the average reward over all arms
+and over the last 100 episodes is higher than 30.
 
-The observation space consists of 33 variables corresponding to position, rotation, velocity, and angular velocities of the arm. Each action is a vector with four numbers, corresponding to torque applicable to two joints. Every entry in the action vector should be a number between -1 and 1.
 
-The goal of the Reacher environment is to collect yellow bananas and 
-avoid blue bananas. A reward of +1 is given for collecting a yellow banana
-and a penalty of -1 is received for collecting a blue banana. 
-The environment is solved if an average reward of +13 is received over the
-last 100 episodes.
+The state of an arm is given by 33 variables, while the action is a 4 variable
+taking values between -1 and +1. Fro the whole environment the state variable is 
+a 20x33 matrix, while the action is a 20x4 matrix.
 
-The action space is discrete. There are 4 possible actions:
-0 - move forward, 1 - move backward, 2 - turn left, 3 - turn right.
-
-The state is 37 dimensional corresponding to the velocity of the agent
-and ray-based perception of objects around the agent's forward direction.
-
-The goal of the Navigation environment is to collect yellow bananas and 
-avoid blue bananas. A reward of +1 is given for collecting a yellow banana
-and a penalty of -1 is received for collecting a blue banana. 
-The environment is solved if an average reward of +13 is received over the
-last 100 episodes.
-
-The action space is discrete. There are 4 possible actions:
-0 - move forward, 1 - move backward, 2 - turn left, 3 - turn right.
-
-The state is 37 dimensional corresponding to the velocity of the agent
-and ray-based perception of objects around the agent's forward direction.
 
 ### Installation Details
 
@@ -38,12 +24,12 @@ Clone the repository:
 
 Go to the project folder:
 
-> cd drlnd/p1_navigation
+> cd drlnd/p2_continuous-control
 
-Download the simulator from [Banana_Linux.zip](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Linux.zip) 
-to the `p1_navigation` folder and unzip locally:
+Download the simulator from [Reacher_Linux.zip](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P2/Reacher/Reacher_Linux.zip) 
+to the `p2_navigation` folder and unzip locally:
 
-> unzip Banana_Linux.zip
+> unzip Reacher_Linux.zip
 
 
 ### How to Run
@@ -60,67 +46,60 @@ Start `jupyter` notebook:
 
 ### Learning Algorithm 
 
-The learning algorithm employed is Dueling Double Deep Q Network with Prioritized Experience Replay.
-__Deep Q learning__ uses __experience replay__ and a __target network__ to stabilize learning.
-
-__Experience replay__ refers to a the use of a memory of experiences i.e. tuples of state, action,
-next_state  and reward that is sampled to create a mini-batch for gradient computation.
-
-__Q learning__ uses the Bellman equation to learn a Q function for the environment.
-The Bellman equation set an equality constraint between the Q value for a state-action pair
-and the sum of the reward and expected value at the next state.
-__Deep Q__ learning minimizes the mean squared error between the Q-value 
-for the current state and action computed by the Q-network and the target 
-value given by the Bellman equation.
-
-The __target network__ is used to compute the value function at the next step and updated 
-regularly, with values from the Q network. The fact that the __target network__ changes
-slower is meant to increase the stability of network training by giving more stable targets
-for learning.
 
 
-The value function for a state is computed by taking the maxium over all actions of 
-the Q-function. This can lead to an over-estimation of the value function, particularly,
-at the start of training. For this reason in __Double Deep Q learning__ the action that 
-maximizes the Q function is chosen using the training __not__ the target network.
+The learning algorithm employed is DDPG (Deep Deterministic Policy Gradient).
+The algorithm is similar to A2C in that it uses a network to train
+the policy (actor) and a separate netowrk to learn the Q-function (critic).
+The policy function is learned using the formula for deterministic policies 
+found by D. Silver et.al in "Deterministic Policy Gradient Algorithms".
 
-__Duelling Deep Q learning__ uses a network architecture that estimates both the
-value function and the advantage for each value-action pair. The Q-function is computed
-as the sum of the value function and advantage. Only this final Q-function is used, and, thus
-all learning algorithms remain unmodified.
+In another respect the algorithm is similar to DQN that a experience
+replay buffer and target network are used to stabilize learning.
+A single actor and critic network is trained using samples from a replay buffer
+that is filled with samples from all parallel agents.
 
-__Experience replay__ weighs the samples in the buffer by the error in Q-function estimation.
-The gradient estimation makes use of importance sampling to reweight each sample from the memory 
-in order to reflect the probability of the sample given the used policy.
-
-I used all the default hyperparameter values provided by the course materials.
-For the prioritized experience replay memory there are two additional 
-parameters: $$ \alpha $$ and $$ \beta $$ that can be viewed as a knob controlling
-the amount of sampled weighing and importance sampling, respectively.
-
-
-### Implementation Details
-
-The network that implements the Q-function is a multi-layer fully connected neural network:
-the first layer has 64 hidden layers, the second 32, the third layer bifurcates to compute
-the value function and advantage separately as shown below.
+The successful training of tha agent is dependent on a few extra factors.
+One is gradient clipping. I used gradient clipping with a threshold value of 0.1
+for both the actor and the critic networks as shown below:
 
 
 ```
-        V = self.fc3_v(x)
-        A = self.fc3_a(x)
-        A = A - A.mean(1).unsqueeze(1)
-        Q = V + A
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), self.critic_grad_threshold)
+        self.critic_optimizer.step()
+        ...
+        # Minimize the loss
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.actor_local.parameters(), self.actor_grad_threshold)
+        self.actor_optimizer.step()        
 ```
 
-I used the `PrioritizedReplayBuffer` class from the OpenAI baselines (included in the github repository) 
-that uses segment trees to implement sampling proportional to the sample relevance.
-The hyperparameters $$ \alpha $$ and $$ \beta $$ are modified according to a linear schedule
-implemented in the class `LinearSchedule`. I experimented with different schedules, but was
-unable to get any improvement. The final schedule is shown below:
+The second ingredient for the successful training is the gradual decrease of the number
+of learning steps taken as the policy improves as shown below.
+
 ```
-        self.alpha = LinearSchedule([1.0, 1.0, 0.6], [0, 300, 500])        
-        self.beta = LinearSchedule([1.0, 1.0, 0.4], [0, 300, 500])
+    def step(self, states, actions, rewards, next_states, dones, eps=0):
+        """Save experience in replay memory, and use random sample from buffer to learn."""
+        # Save experience / reward
+        for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
+            self.memory.add(state, action, reward, next_state, done)
+
+        # Learn, if enough samples are available in memory
+        if eps < 10:
+            self.mod = 1
+            self.repeat = 20
+        elif eps < 20:
+            self.mod = 1
+            self.repeat = 10
+        elif eps < 100:
+            self.mod = 1
+            self.repeat = 2
+        else:
+            self.mod = 10
+            self.repeat = 2  
 ```
 
 
@@ -130,10 +109,15 @@ unable to get any improvement. The final schedule is shown below:
 
 ### Ideas for Future Development
 
+The DDPG algorithm seems to be very well suited to learn a policy that solves 
+the Reacher environment. It was found, though, that learning is sensitive to 
+the random initialization seed.
+
+
+
 Prioritized experience replay has not really worked for me so the first thing I would continue to 
 investigate whether there is not still a programming error. 
 
-### Other Remarks
 
 I attempted to solve the learning-from-pixels problem. I ran into the problem, though, that 
 there seems to be a memory leak in the simulator and learning gets really difficult with time.
