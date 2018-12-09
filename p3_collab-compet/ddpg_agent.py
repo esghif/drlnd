@@ -13,7 +13,7 @@ BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor 
+LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
 
@@ -47,48 +47,29 @@ class Agent():
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
 
         # Noise process
-        self.noise = OUNoise((num_agents, action_size), random_seed)
+        self.noise = OUNoise((num_agents, action_size), random_seed, sigma=1.0)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed)
-
-        # Counter
-        self.step_counter = 0
-        self.mod = 1
-        self.repeat = 20
 
         # Grad
         self.critic_grad_threshold = 0.1
         self.actor_grad_threshold = 0.1
     
-    def step(self, states, actions, rewards, next_states, dones, eps=0):
+    def step(self, states, actions, rewards, next_states, dones, rep=1):
         """Save experience in replay memory, and use random sample from buffer to learn."""
         # Save experience / reward
         for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
             self.memory.add(state, action, reward, next_state, done)
 
         # Learn, if enough samples are available in memory
-        if eps < 10:
-            self.mod = 1
-            self.repeat = 20
-        elif eps < 20:
-            self.mod = 1
-            self.repeat = 10
-        elif eps < 100:
-            self.mod = 1
-            self.repeat = 2
-        else:
-            self.mod = 10
-            self.repeat = 2           
+          
 
         if len(self.memory) > BATCH_SIZE:
-            if self.step_counter % self.mod == (self.mod-1):
-                self.step_counter = 0
-                for _ in range(self.repeat):
-                    experiences = self.memory.sample()
-                    self.learn(experiences, GAMMA)
-            else:
-                self.step_counter += 1
+            for _ in range(rep):
+                experiences = self.memory.sample()
+                self.learn(experiences, GAMMA)
+
 
     def act(self, state, add_noise=True):
         """Returns actions for given state as per current policy."""
@@ -101,8 +82,8 @@ class Agent():
             action += self.noise.sample()
         return np.clip(action, -1, 1)
 
-    def reset(self):
-        self.noise.reset()
+    def reset(self, sigma=None):
+        self.noise.reset(sigma)
 
     def learn(self, experiences, gamma):
         """Update policy and value parameters using given batch of experience tuples.
@@ -171,9 +152,11 @@ class OUNoise:
         self.seed = random.seed(seed)
         self.reset()
 
-    def reset(self):
+    def reset(self, sigma=None):
         """Reset the internal state (= noise) to mean (mu)."""
         self.state = copy.copy(self.mu)
+        if not sigma is None:
+            self.sigma = sigma
 
     def sample(self):
         """Update internal state and return it as a noise sample."""
