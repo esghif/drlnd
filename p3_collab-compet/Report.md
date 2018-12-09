@@ -41,6 +41,25 @@ as shown below:
         target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 ```
 
+Both the actor and critic network are fully connected networks, the structure of the networks and 
+input/output relationships are depicted in the figure below.
+
+![Network Architecture](DDPG.jpg)
+
+The training hyperparameter values used are given in the code snippet below together with 
+a description of their meaning.
+
+```
+BUFFER_SIZE = int(1e5)  # replay buffer size
+BATCH_SIZE = 128        # minibatch size
+GAMMA = 0.99            # discount factor
+TAU = 1e-3              # for soft update of target parameters
+LR_ACTOR = 1e-3         # learning rate of the actor 
+LR_CRITIC = 1e-3        # learning rate of the critic
+WEIGHT_DECAY = 0        # L2 weight decay
+```
+
+
 The successful training of the agent is aided by gradient clipping, modification
 of update steps after each simulation of an episode and decrease of standard deviation
 of the noise used by the DDPG algorithm for exploration.
